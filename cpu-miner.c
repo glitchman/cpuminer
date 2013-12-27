@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2010 Jeff Garzik
  *
@@ -755,8 +754,10 @@ static void parse_arg (int key, char *arg)
 		if (v < 1 || v > 9999)	/* sanity check */
 			show_usage();
 
-		if (v != 1 && v != 2 && v != 4 && v != 8 && v != 16 && v != 32 && v != 64 && v != 128 && v != 256)
-			show_usage();
+		if (v < 1 || v > 256) 
+			printf("Thread Size Can Min 1 Max 256\n\n");
+			exit(1);
+			
 
 		opt_n_threads = v;
 		opt_n_threads_mmc = v;
