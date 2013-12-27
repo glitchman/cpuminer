@@ -282,13 +282,13 @@ static bool submit_upstream_work(CURL *curl, const struct work *work)
 		applog(LOG_INFO, "PROOF OF WORK RESULT: Rejected # %d", ++rejected_count);
 	}
 
-    double total_count = accepted_count + rejected_count;
+    int total_count = accepted_count + rejected_count;
 	applog(LOG_INFO,
             "Result(Accepted/Rejected/Total/Accepted Ratio):    %d   /   %d   /   %d   /   %.3f%%",
             accepted_count,
             rejected_count,
             total_count,
-            accepted_count / total_count * 100
+            (double)accepted_count / total_count * 100
     );
 
 	json_decref(val);
