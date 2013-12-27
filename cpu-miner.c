@@ -239,6 +239,9 @@ err_out:
 	return false;
 }
 
+int accepted_count = 0;
+int rejected_count = 0;
+
 static bool submit_upstream_work(CURL *curl, const struct work *work)
 {
 	char *hexstr = NULL;
@@ -272,12 +275,18 @@ static bool submit_upstream_work(CURL *curl, const struct work *work)
 	err = json_object_get(val, "error");
 
 	if (json_is_true(res)) {
-		applog(LOG_INFO, "PROOF OF WORK RESULT: Accepted");
+		applog(LOG_INFO, "PROOF OF WORK RESULT: Accepted #%d", ++accepted_count);
 	} else if (json_is_array(err) && json_array_size(err) >= 1 && json_is_string(json_array_get(err, 0))) {
-		applog(LOG_INFO, "PROOF OF WORK RESULT: Rejected (%s)", json_string_value(json_array_get(err, 0)));
+		applog(LOG_INFO, "PROOF OF WORK RESULT: Rejected (%s) #%d", json_string_value(json_array_get(err, 0)), ++rejected_count);
 	} else {
-		applog(LOG_INFO, "PROOF OF WORK RESULT: Rejected");
+		applog(LOG_INFO, "PROOF OF WORK RESULT: Rejected #%d", ++rejected_count);
 	}
+	applog(LOG_INFO,
+            "Result(Accepted/Rejected/Total): %d/%d/%d",
+            accepted_count,
+            rejected_count,
+            accepted_count + rejected_count
+    );
 
 	json_decref(val);
 
