@@ -10,15 +10,17 @@ Dependencies:
 		(jansson is optional, and is included in-tree)
 
 Ubuntu / Debian:
-	sudo apt-get install build-essential autoconf libcurl4-openssl-dev
+	sudo apt-get install build-essential autoconf libtool libcurl4-openssl-dev
 
 Basic *nix or MinGW64 build instructions:
-	./autogen.sh	# only needed if building from git repo
+	./autogen.sh
 	CFLAGS="-O3 -march=native -mtune=native" CXXFLAGS="-O3 -march=native -mtune=native" ./configure
 	make
 
 Usage instructions:  
 	Run "minerd --help" to see options. 
+
+On Linux, performance may be slightly increased by reducing system swappiness with 'sudo echo 5 > blabla' command. Also you may consider turning swap off entirely with 'sudo swapoff -a' if your system has enough RAM.
 
 Solo mining:
 	./minerd --url http://127.0.0.1:RPCPORT/ --user RPCUSER --pass RPCPASSWORD --threads 2
