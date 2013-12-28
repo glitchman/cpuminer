@@ -55,8 +55,13 @@ static void *SHA512Filler(void *pargs){
 	
 	uint32_t chunksToProcess=chunks/totalThreads;
 	uint32_t startChunk=threadNumber*chunksToProcess;
+
+	uint32_t endChunk = startChunk + chunksToProcess;
+	if (threadNumber == totalThreads - 1) {
+		endChunk = chunks;
+	}
 	
-	for( uint32_t i = startChunk; i < startChunk+chunksToProcess;  i++){
+	for( uint32_t i = startChunk; i < endChunk;  i++){
 		*index = i;
 		SHA512((unsigned char*)hash_tmp, sizeof(hash_tmp), (unsigned char*)&(mainMemoryPsuedoRandomData[i*chunkSize]));
 		if(*restart)
@@ -115,7 +120,13 @@ static void *aesSearch(void *pargs){
 	//Iterate over the data
 	int searchNumber=comparisonSize/totalThreads;
 	int startLoc=threadNumber*searchNumber;
-	for(uint32_t k=startLoc;k<startLoc+searchNumber;k++){
+
+	uint32_t endLoc = startLoc + searchNumber;
+	if (threadNumber == totalThreads - 1) {
+		endLoc = comparisonSize;
+	}
+	
+	for(uint32_t k=startLoc;k<endLoc;k++){
 		
 		//This can take a while, so check periodically to see if we need to kill the thread
 		/*if(k%100==0){

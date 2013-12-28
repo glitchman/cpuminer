@@ -149,7 +149,7 @@ static struct option_help options_help[] = {
 #endif
 
 	{ "threads N",
-	  "(-t N) Number of miner threads (default: 1, valid: 1,2,4,8,16..256)" },
+	  "(-t N) Number of miner threads (default: 1)" },
 
 	{ "url URL",
 	  "URL for bitcoin JSON-RPC server "
@@ -810,18 +810,6 @@ static void parse_arg (int key, char *arg)
 	if (!opt_n_threads_mmc)
 		opt_n_threads_mmc = num_processors;
 #endif /* !WIN32 */
-
-	if (opt_n_threads_mmc & (opt_n_threads_mmc - 1)) // check for power of 2
-	{
-	    // round to the next power of 2
-		opt_n_threads_mmc--;
-        opt_n_threads_mmc |= opt_n_threads_mmc >> 1;
-        opt_n_threads_mmc |= opt_n_threads_mmc >> 2;
-        opt_n_threads_mmc |= opt_n_threads_mmc >> 4;
-        opt_n_threads_mmc |= opt_n_threads_mmc >> 8;
-        opt_n_threads_mmc |= opt_n_threads_mmc >> 16;
-        opt_n_threads_mmc++;
-    }
 }
 
 static void parse_config(void)
