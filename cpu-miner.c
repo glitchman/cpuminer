@@ -242,7 +242,7 @@ err_out:
 static bool submit_upstream_work(CURL *curl, const struct work *work)
 {
 	char *hexstr = NULL;
-	json_t *val, *res, *err;
+	json_t *val, *res, *err, *reason;
 	char s[345];
 	bool rc = false;
 
@@ -270,11 +270,14 @@ static bool submit_upstream_work(CURL *curl, const struct work *work)
 
 	res = json_object_get(val, "result");
 	err = json_object_get(val, "error");
+	reason = json_object_get(val, "reason");
 
 	if (json_is_true(res)) {
 		applog(LOG_INFO, "PROOF OF WORK RESULT: Accepted");
 	} else if (json_is_array(err) && json_array_size(err) >= 1 && json_is_string(json_array_get(err, 0))) {
 		applog(LOG_INFO, "PROOF OF WORK RESULT: Rejected (%s)", json_string_value(json_array_get(err, 0)));
+	} else if (json_is_string(reason)) {
+		applog(LOG_INFO, "PROOF OF WORK RESULT: Rejected (%s)", json_string_value(reason));
 	} else {
 		applog(LOG_INFO, "PROOF OF WORK RESULT: Rejected");
 	}
@@ -347,6 +350,9 @@ static bool workio_get_work(struct workio_cmd *wc, CURL *curl)
 			opt_fail_pause);
 		sleep(opt_fail_pause);
 	}
+
+	if (opt_debug)
+		applog(LOG_DEBUG, "Getwork received");
 
 	/* send work to requesting thread */
 	if (!tq_push(wc->thr->q, ret_work))
@@ -566,6 +572,9 @@ static void *miner_thread(void *userdata)
 			goto out;
 		}
 
+		if (opt_debug)
+			applog(LOG_DEBUG, "Target: ...%02x%02x%02x%02x%02x%02x%02x%02x", work.target[24], work.target[25], work.target[26], work.target[27], work.target[28], work.target[29], work.target[30], work.target[31]);
+
 		hashes_done = 0;
 		gettimeofday(&tv_start, NULL);
 
@@ -658,10 +667,10 @@ static void *longpoll_thread(void *userdata)
 			applog(LOG_INFO, "LONGPOLL detected new block");
 			restart_threads();
 		} else {
-			if (failures++ < 10) {
-				sleep(10);
+			if (failures++ < 100) {
+				sleep(30);
 				applog(LOG_ERR,
-					"longpoll failed, sleeping for 10s");
+					"longpoll failed, sleeping for 30s");
 			} else {
 				applog(LOG_ERR,
 					"longpoll failed, ending thread");

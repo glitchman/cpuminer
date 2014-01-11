@@ -40,6 +40,7 @@ struct upload_buffer {
 
 struct header_info {
 	char		*lp_path;
+	char		*reason;
 };
 
 struct tq_ent {
@@ -191,6 +192,11 @@ static size_t resp_hdr_cb(void *ptr, size_t size, size_t nmemb, void *user_data)
 		val = NULL;
 	}
 
+	if (!strcasecmp("X-Reject-Reason", key)) {
+		hi->reason = val;	/* steal memory reference */
+		val = NULL;
+	}
+
 out:
 	free(key);
 	free(val);
@@ -211,12 +217,8 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 	char curl_err_str[CURL_ERROR_SIZE];
 	long timeout = longpoll ? (60 * 60) : (60 * 10);
 	struct header_info hi = { };
-	bool lp_scanning = false;
 
 	/* it is assumed that 'curl' is freshly [re]initialized at this pt */
-
-	if (longpoll_scan)
-		lp_scanning = want_longpoll && !have_longpoll;
 
 	if (opt_protocol)
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
@@ -231,10 +233,8 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curl_err_str);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
-	if (lp_scanning) {
-		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, resp_hdr_cb);
-		curl_easy_setopt(curl, CURLOPT_HEADERDATA, &hi);
-	}
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, resp_hdr_cb);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, &hi);
 	if (userpass) {
 		curl_easy_setopt(curl, CURLOPT_USERPWD, userpass);
 		curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -265,7 +265,7 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 	}
 
 	/* If X-Long-Polling was found, activate long polling */
-	if (hi.lp_path) {
+	if (want_longpoll && !have_longpoll && hi.lp_path) {
 		have_longpoll = true;
 		opt_scantime = 60;
 		tq_push(thr_info[longpoll_thr_id].q, hi.lp_path);
@@ -301,6 +301,12 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 		goto err_out;
 	}
 
+	if (hi.reason)
+		json_object_set_new(val, "reason", json_string(hi.reason));
+	
+	free(hi.reason);
+	hi.reason = NULL;
+
 	databuf_free(&all_data);
 	curl_slist_free_all(headers);
 	curl_easy_reset(curl);
@@ -310,6 +316,10 @@ err_out:
 	databuf_free(&all_data);
 	curl_slist_free_all(headers);
 	curl_easy_reset(curl);
+
+	free(hi.reason);
+	hi.reason = NULL;
+
 	return NULL;
 }
 
